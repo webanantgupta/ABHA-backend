@@ -11,6 +11,7 @@ const paymentModel = {
         const sql = `
             INSERT INTO payments
             (
+                user_id,
                 merchant_order_id,
                 phonepe_order_id,
                 amount,
@@ -18,11 +19,13 @@ const paymentModel = {
                 response_data
             )
             VALUES
-            ($1, $2, $3, $4, $5)
+            ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `;
 
         const values = [
+
+            paymentData.user_id,
 
             paymentData.merchant_order_id,
 
@@ -115,6 +118,40 @@ const paymentModel = {
             );
 
         return result.rows[0] || null;
+    },
+
+
+    // =====================================
+    // PAYMENT HISTORY
+    // =====================================
+
+    findPaymentsByUserId: async (
+        userId,
+        client = db
+    ) => {
+
+        const sql = `
+            SELECT
+                id,
+                merchant_order_id,
+                phonepe_order_id,
+                amount,
+                status,
+                response_data,
+                created_at,
+                updated_at
+            FROM payments
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+        `;
+
+        const result =
+            await client.query(
+                sql,
+                [userId]
+            );
+
+        return result.rows;
     }
 
 };

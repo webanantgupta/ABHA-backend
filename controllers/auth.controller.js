@@ -286,14 +286,52 @@ const login = async (req, res) => {
 
 const getMe = async (req, res) => {
 
-    return res.status(200).json({
+    try {
 
-        success: true,
+        // userId comes from JWT
+        const userId = req.user.userId;
 
-        message: "Authenticated user",
+        // Find complete user from database
+        const user = await userModel.findById(userId);
 
-        user: req.user
-    });
+        if (!user) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "User not found"
+            });
+        }
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: "Authenticated user",
+
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
+
+    } catch (error) {
+
+        console.error(
+            "GET ME ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Failed to get authenticated user"
+        });
+    }
 };
 
 

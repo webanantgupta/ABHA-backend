@@ -13,6 +13,25 @@ const createPayment = async (req, res) => {
 
     try {
 
+        // =====================================
+        // GET LOGGED-IN USER FROM JWT
+        // =====================================
+
+        const userId = req.user.userId;
+
+        if (!userId) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    "User authentication required"
+
+            });
+        }
+
+
         const {
             amount
         } = req.body;
@@ -60,6 +79,11 @@ const createPayment = async (req, res) => {
         const redirectUrl =
             `${process.env.FRONTEND_URL}/payment/result`;
 
+
+        console.log(
+            "User ID:",
+            userId
+        );
 
         console.log(
             "Amount:",
@@ -112,10 +136,17 @@ const createPayment = async (req, res) => {
 
 
         // =====================================
-        // SAVE PAYMENT
+        // SAVE PAYMENT IN DATABASE
+        // =====================================
+        // IMPORTANT:
+        // user_id comes from JWT
+        // NOT from frontend
         // =====================================
 
         await paymentModel.createPayment({
+
+            user_id:
+                userId,
 
             merchant_order_id:
                 merchantOrderId,
@@ -214,6 +245,28 @@ const checkPaymentStatus = async (
 
     try {
 
+        // =====================================
+        // GET LOGGED-IN USER
+        // =====================================
+
+        const userId =
+            req.user.userId;
+
+
+        if (!userId) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    "User authentication required"
+
+            });
+
+        }
+
+
         const {
             merchantOrderId
         } = req.params;
@@ -229,8 +282,61 @@ const checkPaymentStatus = async (
                     "Merchant order ID is required"
 
             });
+
         }
 
+
+        // =====================================
+        // FIND PAYMENT
+        // =====================================
+        // Make sure this payment belongs
+        // to the logged-in user
+        // =====================================
+
+        const payment =
+            await paymentModel.findByMerchantOrderId(
+                merchantOrderId
+            );
+
+
+        if (!payment) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Payment not found"
+
+            });
+
+        }
+
+
+        // =====================================
+        // SECURITY CHECK
+        // =====================================
+
+        if (
+            Number(payment.user_id) !==
+            Number(userId)
+        ) {
+
+            return res.status(403).json({
+
+                success: false,
+
+                message:
+                    "You are not authorized to access this payment"
+
+            });
+
+        }
+
+
+        // =====================================
+        // GET STATUS FROM PHONEPE
+        // =====================================
 
         const response =
             await phonepeService.getOrderStatus(
@@ -238,11 +344,99 @@ const checkPaymentStatus = async (
             );
 
 
+        // =====================================
+        // GET PHONEPE STATUS
+        // =====================================
+
+        /*
+            Depending on your PhonePe response,
+            status may be inside response.state
+            or another field.
+
+            Example:
+
+            {
+                state: "COMPLETED"
+            }
+
+        */
+
+        const phonePeStatus =
+            response.state ||
+            response.status ||
+            "PENDING";
+
+
+        // =====================================
+        // CONVERT PHONEPE STATUS
+        // =====================================
+
+        let databaseStatus = "PENDING";
+
+
+        if (
+            phonePeStatus === "COMPLETED" ||
+            phonePeStatus === "SUCCESS"
+        ) {
+
+            databaseStatus = "SUCCESS";
+
+        } else if (
+            phonePeStatus === "FAILED"
+        ) {
+
+            databaseStatus = "FAILED";
+
+        }
+
+
+        // =====================================
+        // UPDATE PAYMENT IN DATABASE
+        // =====================================
+
+        const updatedPayment =
+            await paymentModel.updatePayment(
+
+                merchantOrderId,
+
+                {
+
+                    phonepe_order_id:
+                        payment.phonepe_order_id,
+
+                    status:
+                        databaseStatus,
+
+                    response_data:
+                        response
+
+                }
+
+            );
+
+
+        // =====================================
+        // SEND RESPONSE
+        // =====================================
+
         return res.status(200).json({
 
             success: true,
 
-            data: response
+            data: {
+
+                merchantOrderId,
+
+                status:
+                    databaseStatus,
+
+                phonePeResponse:
+                    response,
+
+                payment:
+                    updatedPayment
+
+            }
 
         });
 
@@ -270,10 +464,94 @@ const checkPaymentStatus = async (
 };
 
 
+// =====================================
+// GET PAYMENT HISTORY
+// =====================================
+
+const getPaymentHistory = async (
+    req,
+    res
+) => {
+
+    try {
+
+        // =====================================
+        // GET USER ID FROM JWT
+        // =====================================
+
+        const userId =
+            req.user.userId;
+
+
+        if (!userId) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    "User authentication required"
+
+            });
+
+        }
+
+
+        // =====================================
+        // GET ONLY THIS USER'S PAYMENTS
+        // =====================================
+
+        const payments =
+            await paymentModel.findPaymentsByUserId(
+                userId
+            );
+
+
+        // =====================================
+        // SEND PAYMENT HISTORY
+        // =====================================
+
+        return res.status(200).json({
+
+            success: true,
+
+            payments
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "GET PAYMENT HISTORY ERROR:",
+            error
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                "Failed to fetch payment history"
+
+        });
+
+    }
+
+};
+
+
+// =====================================
+// EXPORT
+// =====================================
+
 module.exports = {
 
     createPayment,
 
-    checkPaymentStatus
+    checkPaymentStatus,
+
+    getPaymentHistory
 
 };

@@ -3,9 +3,11 @@ const express = require("express");
 const paymentController =
     require("../controllers/phonepeController");
 
+const {
+    authenticate
+} = require("../middleware/auth.middleware");
 
-const router =
-    express.Router();
+const router = express.Router();
 
 
 // =====================================
@@ -14,6 +16,7 @@ const router =
 
 router.post(
     "/create",
+    authenticate,
     paymentController.createPayment
 );
 
@@ -24,18 +27,20 @@ router.post(
 
 router.get(
     "/status/:merchantOrderId",
+    authenticate,
     paymentController.checkPaymentStatus
 );
 
 
 // =====================================
-// PHONEPE WEBHOOK
+// PAYMENT HISTORY
 // =====================================
 
-// router.post(
-//     "/webhook",
-//     paymentController.handleWebhook
-// );
+router.get(
+    "/history",
+    authenticate,
+    paymentController.getPaymentHistory
+);
 
 
 module.exports = router;
