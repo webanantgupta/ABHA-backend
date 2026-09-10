@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-
+const authRoutes = require("./routes/auth.route")
 const paymentRoutes = require("./routes/phonepeRoutes");
 const abhaRoutes = require("./routes/abha.route");
 
@@ -58,7 +58,7 @@ app.get("/", (req, res) => {
 // =====================================
 
 app.use("/api/v1/payment", paymentRoutes);
-
+app.use("/api/v1/auth",authRoutes)
 app.use("/api/v2/abha", abhaRoutes);
 
 module.exports = app;
