@@ -3,6 +3,8 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth.route")
 const paymentRoutes = require("./routes/phonepeRoutes");
 const abhaRoutes = require("./routes/abha.route");
+const appointmentRoutes = require("./routes/appointment.route");
+
 
 const app = express();
 
@@ -60,5 +62,6 @@ app.get("/", (req, res) => {
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/auth",authRoutes)
 app.use("/api/v2/abha", abhaRoutes);
+app.use("/api/v3/appointment",appointmentRoutes)
 
 module.exports = app;
