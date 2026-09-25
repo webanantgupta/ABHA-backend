@@ -1,46 +1,16 @@
 const express = require("express");
 const cors = require("cors");
-const authRoutes = require("./routes/auth.route")
+
+const authRoutes = require("./routes/auth.route");
 const paymentRoutes = require("./routes/phonepeRoutes");
 const abhaRoutes = require("./routes/abha.route");
 const appointmentRoutes = require("./routes/appointment.route");
 
-
 const app = express();
 
-// const allowedOrigins = [
-//   "http://localhost:5173",
-//   "http://127.0.0.1:5173",
-//   "https://abha-frontend.vercel.app"
-// ];
-
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       // Allow requests such as Postman/server-to-server
-//       if (!origin) {
-//         return callback(null, true);
-//       }
-
-//       if (allowedOrigins.includes(origin)) {
-//         return callback(null, true);
-//       }
-
-//       return callback(new Error(`CORS blocked origin: ${origin}`));
-//     },
-
-//     methods: [
-//       "GET",
-//       "POST",
-//       "PUT",
-//       "PATCH",
-//       "DELETE",
-//       "OPTIONS",
-//     ],
-
-//     credentials: true,
-//   })
-// );
+// =====================================
+// CORS CONFIGURATION
+// =====================================
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -48,46 +18,46 @@ const allowedOrigins = [
   "https://abha-frontend.vercel.app",
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests without an Origin header
-      // Example: Postman, server-to-server requests
-      if (!origin) {
-        return callback(null, true);
-      }
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests without Origin
+    // Example: Postman / server-to-server
+    if (!origin) {
+      return callback(null, true);
+    }
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      return callback(
-        new Error(`CORS blocked origin: ${origin}`)
-      );
-    },
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
 
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "PATCH",
-      "DELETE",
-      "OPTIONS",
-    ],
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
 
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
 
-    credentials: true,
+  credentials: true,
 
-    optionsSuccessStatus: 204,
-  })
-);
+  optionsSuccessStatus: 204,
+};
 
-// Explicitly handle preflight requests
-app.options("*", cors());
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// =====================================
+// BODY PARSER
+// =====================================
 
 app.use(express.json());
 
@@ -107,8 +77,27 @@ app.get("/", (req, res) => {
 // =====================================
 
 app.use("/api/v1/payment", paymentRoutes);
-app.use("/api/v1/auth",authRoutes)
+
+// =====================================
+// AUTH ROUTES
+// =====================================
+
+app.use("/api/v1/auth", authRoutes);
+
+// =====================================
+// ABHA ROUTES
+// =====================================
+
 app.use("/api/v2/abha", abhaRoutes);
-app.use("/api/v3/appointment",appointmentRoutes)
+
+// =====================================
+// APPOINTMENT ROUTES
+// =====================================
+
+app.use("/api/v3/appointment", appointmentRoutes);
+
+// =====================================
+// EXPORT APP
+// =====================================
 
 module.exports = app;
