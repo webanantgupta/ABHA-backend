@@ -9,7 +9,7 @@ const appointmentRoutes = require("./routes/appointment.route");
 const app = express();
 
 // =====================================
-// CORS CONFIGURATION
+// CORS
 // =====================================
 
 const allowedOrigins = [
@@ -18,42 +18,40 @@ const allowedOrigins = [
   "https://abha-frontend.vercel.app",
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests without Origin
-    // Example: Postman / server-to-server
-    if (!origin) {
-      return callback(null, true);
-    }
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow Postman/server-to-server requests
+      if (!origin) {
+        return callback(null, true);
+      }
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-    return callback(new Error(`CORS blocked origin: ${origin}`));
-  },
+      return callback(null, false);
+    },
 
-  methods: [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-  ],
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+    ],
 
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-  ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
 
-  credentials: true,
+    credentials: true,
 
-  optionsSuccessStatus: 204,
-};
-
-// Apply CORS middleware
-app.use(cors(corsOptions));
+    optionsSuccessStatus: 204,
+  })
+);
 
 // =====================================
 // BODY PARSER
@@ -62,42 +60,59 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // =====================================
-// ROOT
+// TEST ROUTE
 // =====================================
 
 app.get("/", (req, res) => {
-  res.json({
+  res.status(200).json({
     success: true,
-    message: "PhonePe Payment Gateway Backend Running",
+    message: "ABDM Hospital Backend Running",
   });
 });
 
 // =====================================
-// PAYMENT ROUTES
-// =====================================
-
-app.use("/api/v1/payment", paymentRoutes);
-
-// =====================================
-// AUTH ROUTES
+// AUTH
 // =====================================
 
 app.use("/api/v1/auth", authRoutes);
 
 // =====================================
-// ABHA ROUTES
+// PAYMENT
+// =====================================
+
+app.use("/api/v1/payment", paymentRoutes);
+
+// =====================================
+// ABHA
 // =====================================
 
 app.use("/api/v2/abha", abhaRoutes);
 
 // =====================================
-// APPOINTMENT ROUTES
+// APPOINTMENT
 // =====================================
 
 app.use("/api/v3/appointment", appointmentRoutes);
 
 // =====================================
-// EXPORT APP
+// ERROR HANDLER
+// =====================================
+
+app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
+
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+    error:
+      process.env.NODE_ENV === "production"
+        ? undefined
+        : err.message,
+  });
+});
+
+// =====================================
+// EXPORT
 // =====================================
 
 module.exports = app;
