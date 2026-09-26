@@ -22,6 +22,8 @@ app.use(
   cors({
     origin: function (origin, callback) {
       // Allow Postman/server-to-server requests
+ console.log("CORS ORIGIN:", origin);
+
       if (!origin) {
         return callback(null, true);
       }
@@ -29,6 +31,7 @@ app.use(
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+      console.log("CORS BLOCKED:", origin);
 
       return callback(null, false);
     },
